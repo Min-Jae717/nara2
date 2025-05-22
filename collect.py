@@ -14,14 +14,6 @@ now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
 SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
 API_KEY = os.getenv("G2B_API_KEY")
 
-print("DB URL 존재 여부:", bool(SUPABASE_DB_URL))
-print("API KEY 존재 여부:", bool(API_KEY))
-
-print("ENV VAR keys:", list(os.environ.keys()))
-print("API_KEY:", os.getenv("G2B_API_KEY"))
-print("SUPABASE_DB_URL:", os.getenv("SUPABASE_DB_URL"))
-
-
 # DB 연결
 conn = psycopg2.connect(SUPABASE_DB_URL)
 cur = conn.cursor()
