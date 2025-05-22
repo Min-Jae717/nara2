@@ -4,10 +4,10 @@ import requests
 import psycopg2
 from urllib.parse import urlencode, quote_plus
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # 한국 시간대로 변경(한국 시간대(KST)는 UTC+9)
-now_kst = datetime.utcnow() + timedelta(hours=9)
+now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
 
 # .env 로드
 SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
