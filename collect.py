@@ -27,7 +27,7 @@ try:
         raw->>'bidNtceBgn' DESC LIMIT 1                
 """)
     result = cur.fetchone()
-    raw = result if result else {}
+    raw = result[0] if result else {}
     start_time = raw.get("bidNtceBgn", (now_kst - timedelta(minutes=10)).strftime("%Y%m%d%H%M"))
     
 except Exception as e:
