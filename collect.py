@@ -5,6 +5,7 @@ import psycopg2
 from urllib.parse import urlencode, quote_plus
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+import pandas as pd
 
 # 한국 시간대로 변경(한국 시간대(KST)는 UTC+9)
 now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
@@ -36,7 +37,8 @@ try:
 """)
     result = cur.fetchone()
     raw = result[0] if result else {}
-    start_time = raw.get("bidNtceBgn", (now_kst - timedelta(minutes=10)).strftime("%Y%m%d%H%M"))
+    start_time = pd.to_datetime(raw.get("bidNtceBgn", (now_kst - timedelta(minutes=10))))
+    start_time = start_time.strftime("%Y%m%d%H%M")
     
 except Exception as e:
     print("start_time 불러오기 오류:", e)
