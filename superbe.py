@@ -256,11 +256,13 @@ if page == 'home':
             cols[3].write(row["공고기관명"])
             cols[4].write(row["업무구분명"])
             cols[5].write(convert_to_won_format(row["금액"]))
-            cols[6].text(row["입찰공고일시"].strftime("%Y-%m-%d\n%H:%M"))
+            cols[6].markdown(f"<div style='text-align:center'>{row['입찰공고일자'].strftime('%Y-%m-%d')}<br>{row['입찰공고시각'].strftime('%H:%M')}</div>",
+            unsafe_allow_html=True)
             if pd.isna(row["입찰마감일시"]):
                 cols[7].write("공고서 참조")
             else:
-                cols[7].write(row["입찰마감일시"].strftime("%Y-%m-%d\n%H:%M"))
+                cols[7].markdown(f"<div style='text-align:center'>{row['입찰마감일자'].strftime('%Y-%m-%d')}<br>{row['입찰마감시각'].strftime('%H:%M')}</div>",
+                unsafe_allow_html=True)
             if cols[8].button("보기", key=f"live_detail_{i}"):
                 st.session_state["page"] = "detail"
                 st.session_state["selected_live_bid"] = row.to_dict()
@@ -333,7 +335,7 @@ elif page == "detail":
                     </span>                   
                 </div>
                     <span style="font-size: 1.2em; font-weight: 600; color: #333;">
-                            ⏳ 공고마감일: {마감일시}
+                            ⏳ 공고마감일: {마감일시_표시}
                     </span>
                     <div style="font-size: 1.5em; font-weight: bold; color: #007bff; text-align: right;">
                         💰 금액: {format_won(row.get('금액'))}
