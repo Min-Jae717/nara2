@@ -67,8 +67,12 @@ def get_supabase_data():
         conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC")
-        live_data = cur.fetchall()
-        df_live = pd.DataFrame(live_data)
+        live_d = cur.fetchall()
+        conn.close()
+
+        # JSONB -> DataFrame으로 변경
+        live_data = [(row[0]) for l in live_d]
+        df_live = pd.json_normalize(live_data)
         return df_live
     
     except Exception as e:
@@ -130,6 +134,8 @@ if page == 'home':
         st.subheader("📢 현재 진행 중인 입찰 목록")
 
         # 2. DataFrame 컬럼명 변경
+        for col in df_live["raw"] :
+            col.
         df_live.rename(columns=simple_info, inplace=True)
 
         df_live["입찰공고번호_차수"] = df_live["입찰공고번호"].astype(str) + "-" + df_live["입찰공고차수"].astype(str)
