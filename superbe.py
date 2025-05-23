@@ -256,7 +256,7 @@ if page == 'home':
             cols[3].write(row["공고기관명"])
             cols[4].write(row["업무구분명"])
             cols[5].write(convert_to_won_format(row["금액"]))
-            cols[6].write(row["입찰공고일시"].strftime("%Y-%m-%d\n%H:%M"))
+            cols[6].text(row["입찰공고일시"].strftime("%Y-%m-%d\n%H:%M"))
             if pd.isna(row["입찰마감일시"]):
                 cols[7].write("공고서 참조")
             else:
@@ -298,9 +298,9 @@ elif page == "detail":
         row = st.session_state["selected_live_bid"]
         
         # --- 상단 핵심 정보 섹션 (강조) ---
-        마감일시 = row.get('입찰마감일시시')
+        마감일시 = row.get('입찰마감일시')
         # 마감시간 = row.get('입찰마감시각')
-        마감일시_표시 = 마감일시.strftime("%Y년 %m월 %d일 %H시 %M분분") if pd.notna(마감일시) else "공고서 참조"
+        마감일시_표시 = 마감일시.strftime("%Y년 %m월 %d일 %H시 %M분") if pd.notna(마감일시) else "공고서 참조"
         # 마감시간_표시 = 마감시간.strftime("%H:%M") if pd.notna(마감시간) else "공고서 참조"
 
         # 날짜 및 시간 처리
