@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import psycopg2
-from psycopg2.extras import RealDictCursor
 import pandas as pd
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
@@ -140,12 +139,15 @@ if page == 'home':
         df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
                                       else x["배정예산금액"], axis=1)
         # 👉 날짜 형식 변환
-        df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"])
-        df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"])
+        df_live["입찰공고일시"] = pd.to_datetime(f"{df_live["입찰공고일자"]}{df_live["입찰공고시각"]}", format="%Y-%m-%d %H:%M")
+        
+        df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"], format="%Y-%m-%d")
+        df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"], format="%Y-%m-%d")
 
         # 시간 형식 변환
         df_live["입찰공고시각"] = pd.to_datetime(df_live["입찰공고시각"], format="%H:%M")
         df_live["입찰마감시각"] = pd.to_datetime(df_live["입찰마감시각"], format="%H:%M")
+
 
         # 🔍 필터 UI
         search_keyword = st.text_input("🔎 공고명 또는 공고기관 검색")
@@ -298,7 +300,7 @@ elif page == "detail":
         마감일 = row.get('입찰마감일자')
         마감시간 = row.get('입찰마감시각')
         마감일_표시 = 마감일.strftime("%Y년 %m월 %d일") if pd.notna(마감일) else "공고서 참조"
-        마감시간_표시 = 마감시간 if pd.notna(마감시간) else "공고서 참조"
+        마감시간_표시 = 마감시간.strftime("%H:%M") if pd.notna(마감시간) else "공고서 참조"
 
         # 날짜 및 시간 처리
         게시일 = row.get('입찰공고일자')
