@@ -85,7 +85,7 @@ df_live = get_supabase_data()
 def convert_to_won_format(amount):
     try:
         if not amount or pd.isna(amount):
-            return "공고 참조"
+            return "공고서 참조"
         
         amount = float(str(amount).replace(",", ""))
 
@@ -255,7 +255,7 @@ if page == 'home':
             cols[5].write(convert_to_won_format(row["금액"]))
             cols[6].write(row["입찰공고일자"].strftime("%Y-%m-%d"))
             if pd.isna(row["입찰마감일자"]):
-                cols[7].write("공고 참조")
+                cols[7].write("공고서 참조")
             else:
                 cols[7].write(row["입찰마감일자"].strftime("%Y-%m-%d"))
             if cols[8].button("보기", key=f"live_detail_{i}"):
@@ -297,8 +297,8 @@ elif page == "detail":
         # --- 상단 핵심 정보 섹션 (강조) ---
         마감일 = row.get('입찰마감일자')
         마감시간 = row.get('입찰마감시각')
-        마감일_표시 = 마감일.strftime("%Y년 %m월 %d일") if pd.notna(마감일) else "공고서서 참조"
-        마감시간_표시 = 마감시간 if pd.notna(마감시간) else "공고 참조"
+        마감일_표시 = 마감일.strftime("%Y년 %m월 %d일") if pd.notna(마감일) else "공고서 참조"
+        마감시간_표시 = 마감시간 if pd.notna(마감시간) else "공고서 참조"
 
         # 날짜 및 시간 처리
         게시일 = row.get('입찰공고일자')
@@ -314,14 +314,14 @@ elif page == "detail":
                 box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             ">
                 <h2 style="color: #0056b3; margin-top: 0px; margin-bottom: 10px; font-weight: bold; font-size: 2.2em;">
-                    {row.get('공고명', '공고명 없음')}
+                    {row.get('입찰공고명', '공고명 없음')}
                 </h2>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <span style="font-size: 1.2em; font-weight: 600; color: #333;">
-                        📊 구분: {row.get('bidNtceSttusNm', '정보 없음')}
+                        📊 구분: {row.get('입찰공고상태명', '정보 없음')}
                     </span>
                     <span style="font-size: 1.2em; font-weight: 600; color: #333;">
-                        🏢 수요기관: {row.get('수요기관', '정보 없음')}
+                        🏢 수요기관: {row.get('수요기관명', '정보 없음')}
                     </span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -364,7 +364,7 @@ elif page == "detail":
                     <div>
                         <span style="font-size: 16px; font-weight: bold; color: #333;">📍 지역제한</span><br>
                         <span style="font-size: 18px; font-weight: 500; color: #000;">
-                            {row['prtcptPsblRgnNm'] if row['지역제한'] == 'Y' and pd.notna(row['prtcptPsblRgnNm']) else '없음'}
+                            {row['참가가능지역명'] if row['지역제한여부'] == 'Y' and pd.notna(row['참가가능지역명']) else '없음'}
                         </span>
                     </div>
                 </div>
@@ -389,8 +389,8 @@ elif page == "detail":
                     <!-- 내용이 길면 스크롤되도록 -->
                     <p style="font-size: 18px; font-weight: bold; overflow-y: auto; max-height: 90px;">
                         {"<br>".join([f"{i+1}. {item.strip()}" for i,
-                                    item in enumerate(str(row['bidprcPsblIndstrytyNm']).split(',')) if str(item).strip()]) 
-                                    if row['bidprcPsblIndstrytyNm'] and str(row['bidprcPsblIndstrytyNm']).strip() != "" else '공문서참조'}
+                                    item in enumerate(str(row['투찰가능업종명']).split(',')) if str(item).strip()]) 
+                                    if row['투찰가능업종명'] and str(row['투찰가능업종명']).strip() != "" else '공문서참조'}
                     </p>
                 </div>
                 """,
