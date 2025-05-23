@@ -120,15 +120,13 @@ st.title("📝 실시간 입찰 공고 및 낙찰 결과")
 
 # 쿼리 파라미터로 현재 페이지 구분
 page = st.session_state.get("page", "home")
-
-if page == "home":
-    st_autorefresh(interval=60 * 1000, key='refresh_home_page') # 60초마다 새로고침
-    
+   
 tab1, = st.tabs(["📢 실시간 입찰 공고"])
 # ------------------------
 # 📢 실시간 입찰 공고 탭
 # ------------------------
 if page == 'home':    
+    st_autorefresh(interval=60 * 1000, key='refresh_home_page') # 60초마다 새로고침
     with tab1:
         st.subheader("📢 현재 진행 중인 입찰 목록")
 
