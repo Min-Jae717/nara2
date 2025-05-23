@@ -359,7 +359,7 @@ elif page == "detail":
                     <div style="margin-bottom: 10px;">
                         <span style="font-size: 16px; font-weight: bold; color: #333;">🤝 공동수급</span><br>
                         <span style="font-size: 18px; font-weight: 500; color: #000;">
-                        {format_joint_contract(row['공동수급'])}</span>
+                        {format_joint_contract(row['cmmnReciptMethdNm'])}</span>
                     </div>
                     <div>
                         <span style="font-size: 16px; font-weight: bold; color: #333;">📍 지역제한</span><br>
