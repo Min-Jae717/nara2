@@ -65,7 +65,7 @@ simple_info = {
 def get_supabase_data():
     try:
         conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         cur.execute("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC")
         live_d = cur.fetchall()
         conn.close()
