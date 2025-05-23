@@ -134,8 +134,6 @@ if page == 'home':
         st.subheader("📢 현재 진행 중인 입찰 목록")
 
         # 2. DataFrame 컬럼명 변경
-        for col in df_live["raw"] :
-            col.
         df_live.rename(columns=simple_info, inplace=True)
 
         df_live["입찰공고번호_차수"] = df_live["입찰공고번호"].astype(str) + "-" + df_live["입찰공고차수"].astype(str)
