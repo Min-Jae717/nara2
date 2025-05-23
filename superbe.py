@@ -71,7 +71,7 @@ def get_supabase_data():
         conn.close()
 
         # JSONB -> DataFrame으로 변경
-        live_data = [(row[0]) for l in live_d]
+        live_data = [(l[0]) for l in live_d]
         df_live = pd.json_normalize(live_data)
         return df_live
     
