@@ -139,8 +139,9 @@ if page == 'home':
         df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
                                       else x["배정예산금액"], axis=1)
         # 👉 날짜 형식 변환
-        df_live["입찰공고일시"] = pd.to_datetime(f"{df_live["입찰공고일자"]}{df_live["입찰공고시각"]}", format="%Y-%m-%d %H:%M")
-        
+        df_live["입찰공고일시"] = pd.to_datetime((df_live["입찰공고일자"]+df_live["입찰공고시각"]), format="%Y-%m-%d%H:%M")
+        df_live["입찰마감일시"] = pd.to_datetime((df_live["입찰마감일자"]+df_live["입찰마감시각"]), format="%Y-%m-%d%H:%M")
+
         df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"], format="%Y-%m-%d")
         df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"], format="%Y-%m-%d")
 
@@ -255,11 +256,11 @@ if page == 'home':
             cols[3].write(row["공고기관명"])
             cols[4].write(row["업무구분명"])
             cols[5].write(convert_to_won_format(row["금액"]))
-            cols[6].write(row["입찰공고일자"].strftime("%Y-%m-%d"))
-            if pd.isna(row["입찰마감일자"]):
+            cols[6].write(row["입찰공고일시"].strftime("%Y-%m-%d\n%H:%M"))
+            if pd.isna(row["입찰마감일시"]):
                 cols[7].write("공고서 참조")
             else:
-                cols[7].write(row["입찰마감일자"].strftime("%Y-%m-%d"))
+                cols[7].write(row["입찰마감일시"].strftime("%Y-%m-%d\n%H:%M"))
             if cols[8].button("보기", key=f"live_detail_{i}"):
                 st.session_state["page"] = "detail"
                 st.session_state["selected_live_bid"] = row.to_dict()
@@ -297,10 +298,10 @@ elif page == "detail":
         row = st.session_state["selected_live_bid"]
         
         # --- 상단 핵심 정보 섹션 (강조) ---
-        마감일 = row.get('입찰마감일자')
-        마감시간 = row.get('입찰마감시각')
-        마감일_표시 = 마감일.strftime("%Y년 %m월 %d일") if pd.notna(마감일) else "공고서 참조"
-        마감시간_표시 = 마감시간.strftime("%H:%M") if pd.notna(마감시간) else "공고서 참조"
+        마감일시 = row.get('입찰마감일시시')
+        # 마감시간 = row.get('입찰마감시각')
+        마감일시_표시 = 마감일시.strftime("%Y년 %m월 %d일 %H시 %M분분") if pd.notna(마감일시) else "공고서 참조"
+        # 마감시간_표시 = 마감시간.strftime("%H:%M") if pd.notna(마감시간) else "공고서 참조"
 
         # 날짜 및 시간 처리
         게시일 = row.get('입찰공고일자')
@@ -332,7 +333,7 @@ elif page == "detail":
                     </span>                   
                 </div>
                     <span style="font-size: 1.2em; font-weight: 600; color: #333;">
-                            ⏳ 공고마감일: {마감일_표시} {마감시간_표시}
+                            ⏳ 공고마감일: {마감일시}
                     </span>
                     <div style="font-size: 1.5em; font-weight: bold; color: #007bff; text-align: right;">
                         💰 금액: {format_won(row.get('금액'))}
