@@ -140,8 +140,8 @@ if page == 'home':
         df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
                                       else x["배정예산금액"], axis=1)
         # 👉 날짜 형식 변환
-        df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"], format="%Y-%m-%d")
-        df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"], format="%Y-%m-%d")
+        df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"])
+        df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"])
 
         # 시간 형식 변환
         df_live["입찰공고시각"] = pd.to_datetime(df_live["입찰공고시각"], format="%H:%M")
@@ -359,7 +359,7 @@ elif page == "detail":
                     <div style="margin-bottom: 10px;">
                         <span style="font-size: 16px; font-weight: bold; color: #333;">🤝 공동수급</span><br>
                         <span style="font-size: 18px; font-weight: 500; color: #000;">
-                        {format_joint_contract(row['cmmnReciptMethdNm'])}</span>
+                        {format_joint_contract(row['공동수급방식명'])}</span>
                     </div>
                     <div>
                         <span style="font-size: 16px; font-weight: bold; color: #333;">📍 지역제한</span><br>
