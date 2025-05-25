@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import psycopg2
-import pandas as pd
+import numpy as np
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
 
@@ -61,18 +61,16 @@ simple_info = {
 
 st.set_page_config(page_title="입찰 공고 서비스", layout="wide")
 
-# supabase 연결 후 기존데이터 캐싱 작업
+# 캐싱 데이터 로드
 @st.cache_data
 def load_all_data():
     conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
     df = pd.read_sql("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC", conn)
     conn.close()
-    # JSONB 컬럼일 경우
     live_data = [(l[0]) for l in df.values]
     df_live = pd.json_normalize(live_data)
     return df_live
 
-# 새로 들어온 데이터 가져오기
 def load_new_data(last_date, last_time):
     conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
     sql = """
@@ -81,40 +79,35 @@ def load_new_data(last_date, last_time):
            OR (raw->>'bidNtceDate' = %s AND raw->>'bidNtceBgn' > %s)
         ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC
     """
-    df = pd.read_sql(sql, conn, params=[last_date, last_date, last_time])
+    df = pd.read_sql(sql, conn, params=[str(last_date), str(last_date), str(last_time)])
     conn.close()
     live_data = [(l[0]) for l in df.values]
     new_df = pd.json_normalize(live_data)
     return new_df
 
-# 데이터 가져오기
-# 캐시 데이터 로딩 직후 컬럼명 강제 변환
+# 캐시 및 컬럼명 변환
+if "cached_df" not in st.session_state:
+    st.session_state["cached_df"] = load_all_data()
+# 무조건 컬럼명 한글화(중복해도 안전)
 st.session_state["cached_df"].rename(columns=simple_info, inplace=True)
 
+# 마지막 날짜/시간 구하기
 if not st.session_state["cached_df"].empty:
     last_row = st.session_state["cached_df"].iloc[0]
-    # 안전하게 컬럼명 확인 후 사용
-    colnames = last_row.index.tolist()
-    if "입찰공고일자" in colnames and "입찰공고시각" in colnames:
-        last_date = last_row["입찰공고일자"]
-        last_time = last_row["입찰공고시각"]
-    elif "bidNtceDate" in colnames and "bidNtceBgn" in colnames:
-        last_date = last_row["bidNtceDate"]
-        last_time = last_row["bidNtceBgn"]
-    else:
-        raise KeyError(f"DataFrame 컬럼명 확인 필요: {colnames}")
+    last_date = last_row["입찰공고일자"] if "입찰공고일자" in last_row else last_row.get("bidNtceDate")
+    last_time = last_row["입찰공고시각"] if "입찰공고시각" in last_row else last_row.get("bidNtceBgn")
 else:
     last_date, last_time = "2000-01-01", "00:00"
 
-
-# 신규 데이터 불러오기
+# 신규 데이터 불러오고 컬럼명 한글로 변환
 new_df = load_new_data(str(last_date), str(last_time))
+new_df.rename(columns=simple_info, inplace=True)
 if not new_df.empty:
     st.session_state["cached_df"] = pd.concat([new_df, st.session_state["cached_df"]], ignore_index=True)
+    st.session_state["cached_df"].rename(columns=simple_info, inplace=True) # 병합 후에도 컬럼명 강제
 
-# 이후 기존처럼 DataFrame 사용
+# 최종 데이터프레임 사용
 df_live = st.session_state["cached_df"]
-df_live.rename(columns=simple_info, inplace=True)
 
 # 메인 페이지 금액 억단위
 def convert_to_won_format(amount):
