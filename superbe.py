@@ -60,25 +60,52 @@ simple_info = {
 }
 
 
-# supabase 연결
-def get_supabase_data():
-    try:
-        conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
-        cur = conn.cursor()
-        cur.execute("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC")
-        live_d = cur.fetchall()
-        conn.close()
+# supabase 연결 후 기존데이터 캐싱 작업
+@st.cache_data
+def load_all_data():
+    conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
+    df = pd.read_sql("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC", conn)
+    conn.close()
+    # JSONB 컬럼일 경우
+    live_data = [(l[0]) for l in df.values]
+    df_live = pd.json_normalize(live_data)
+    return df_live
 
-        # JSONB -> DataFrame으로 변경
-        live_data = [(l[0]) for l in live_d]
-        df_live = pd.json_normalize(live_data)
-        return df_live
-    
-    except Exception as e:
-        st.error(f"Supabase 연결 실패: {e}")
-        return pd.DataFrame(), pd.DataFrame(), None
+# 새로 들어온 데이터 가져오기
+def load_new_data(last_date, last_time):
+    conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
+    sql = """
+        SELECT raw FROM bids_live
+        WHERE (raw->>'bidNtceDate' > %s)
+           OR (raw->>'bidNtceDate' = %s AND raw->>'bidNtceBgn' > %s)
+        ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC
+    """
+    df = pd.read_sql(sql, conn, params=[last_date, last_date, last_time])
+    conn.close()
+    live_data = [(l[0]) for l in df.values]
+    new_df = pd.json_normalize(live_data)
+    return new_df
+
 # 데이터 가져오기
-df_live = get_supabase_data()
+if "cached_df" not in st.session_state:
+    st.session_state["cached_df"] = load_all_data()
+
+# 마지막 날짜/시간 구하기
+if not st.session_state["cached_df"].empty:
+    last_row = st.session_state["cached_df"].iloc[0]
+    last_date = last_row["bidNtceDate"]
+    last_time = last_row["bidNtceBgn"]
+else:
+    last_date, last_time = "2000-01-01", "00:00"
+
+# 신규 데이터 불러오기
+new_df = load_new_data(last_date, last_time)
+if not new_df.empty:
+    st.session_state["cached_df"] = pd.concat([new_df, st.session_state["cached_df"]], ignore_index=True)
+
+# 이후 기존처럼 DataFrame 사용
+df_live = st.session_state["cached_df"]
+df_live.rename(columns=simple_info, inplace=True)
 
 # 메인 페이지 금액 억단위
 def convert_to_won_format(amount):
@@ -131,7 +158,7 @@ if page == 'home':
         st.subheader("📢 현재 진행 중인 입찰 목록")
 
         # 2. DataFrame 컬럼명 변경
-        df_live.rename(columns=simple_info, inplace=True)
+        # df_live.rename(columns=simple_info, inplace=True)
 
         df_live["입찰공고번호_차수"] = df_live["입찰공고번호"].astype(str) + "-" + df_live["입찰공고차수"].astype(str)
         df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
