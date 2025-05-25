@@ -59,6 +59,7 @@ simple_info = {
     "dataBssDate": "데이터기준일자"
 }
 
+st.set_page_config(page_title="입찰 공고 서비스", layout="wide")
 
 # supabase 연결 후 기존데이터 캐싱 작업
 @st.cache_data
@@ -142,7 +143,6 @@ def format_joint_contract(value):
         return f"허용 [{value.strip()}]"
     return "공고서 참조"
     
-st.set_page_config(page_title="입찰 공고 서비스", layout="wide")
 st.title("📝 실시간 입찰 공고 및 낙찰 결과")
 
 # 쿼리 파라미터로 현재 페이지 구분
