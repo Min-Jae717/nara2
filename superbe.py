@@ -88,16 +88,24 @@ def load_new_data(last_date, last_time):
     return new_df
 
 # 데이터 가져오기
-if "cached_df" not in st.session_state:
-    st.session_state["cached_df"] = load_all_data()
+# 캐시 데이터 로딩 직후 컬럼명 강제 변환
+st.session_state["cached_df"].rename(columns=simple_info, inplace=True)
 
-# 마지막 날짜/시간 구하기
 if not st.session_state["cached_df"].empty:
     last_row = st.session_state["cached_df"].iloc[0]
-    last_date = last_row["입찰공고일자"]
-    last_time = last_row["입찰공고시각"]
+    # 안전하게 컬럼명 확인 후 사용
+    colnames = last_row.index.tolist()
+    if "입찰공고일자" in colnames and "입찰공고시각" in colnames:
+        last_date = last_row["입찰공고일자"]
+        last_time = last_row["입찰공고시각"]
+    elif "bidNtceDate" in colnames and "bidNtceBgn" in colnames:
+        last_date = last_row["bidNtceDate"]
+        last_time = last_row["bidNtceBgn"]
+    else:
+        raise KeyError(f"DataFrame 컬럼명 확인 필요: {colnames}")
 else:
     last_date, last_time = "2000-01-01", "00:00"
+
 
 # 신규 데이터 불러오기
 new_df = load_new_data(str(last_date), str(last_time))
