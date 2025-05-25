@@ -165,8 +165,13 @@ if page == 'home':
         df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
                                       else x["배정예산금액"], axis=1)
         # 👉 날짜 형식 변환
-        df_live["입찰공고일시"] = pd.to_datetime((df_live["입찰공고일자"]+df_live["입찰공고시각"]), format="%Y-%m-%d%H:%M")
-        df_live["입찰마감일시"] = pd.to_datetime((df_live["입찰마감일자"]+df_live["입찰마감시각"]), format="%Y-%m-%d%H:%M")
+        # df_live["입찰공고일시"] = pd.to_datetime((df_live["입찰공고일자"]+df_live["입찰공고시각"]), format="%Y-%m-%d%H:%M")
+        # df_live["입찰마감일시"] = pd.to_datetime((df_live["입찰마감일자"]+df_live["입찰마감시각"]), format="%Y-%m-%d%H:%M")
+        df_live["입찰공고일시"] = pd.to_datetime(
+        df_live["입찰공고일자"].astype(str) + df_live["입찰공고시각"].astype(str), format="%Y-%m-%d%H:%M")
+        df_live["입찰마감일시"] = pd.to_datetime(
+        df_live["입찰마감일자"].astype(str) + df_live["입찰마감시각"].astype(str), format="%Y-%m-%d%H:%M")
+
 
         df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"], format="%Y-%m-%d")
         df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"], format="%Y-%m-%d")
