@@ -4,6 +4,7 @@ import psycopg2
 import pandas as pd
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
+import numpy as np
 
 # 컬럼 매핑용 딕셔너리
 simple_info = {
@@ -60,25 +61,65 @@ simple_info = {
 }
 
 
-# supabase 연결
-def get_supabase_data():
+# supabase 연결하여 기존 데이터 불러오기
+@st.cache_data # 캐싱작업
+def load_all_data():
     try:
-        conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
-        cur = conn.cursor()
-        cur.execute("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC")
-        live_d = cur.fetchall()
-        conn.close()
+        conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"]) # db에 접속
+        df = pd.read_sql("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC", conn)
+        # 공고개시일자, 시각 순으로 정렬하여 df 가져오기
+        conn.close() # 접속 해제
 
         # JSONB -> DataFrame으로 변경
-        live_data = [(l[0]) for l in live_d]
+        live_data = [(l[0]) for l in df.values]
         df_live = pd.json_normalize(live_data)
+        # json_normalize는 중첩된 JSON 데이터를 pandas DataFrame으로 평탄화해서 변환해주는 함수
         return df_live
     
     except Exception as e:
         st.error(f"Supabase 연결 실패: {e}")
-        return pd.DataFrame(), pd.DataFrame(), None
+        return None
+
+# 최신 데이터만 추가로 불러오기
+def load_new_data(last_date, last_time) :
+    conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"]) # db접속
+    sql = """
+        SELECT raw FROM bids_live
+        WHERE (raw->>'bidNtceDate' > %s) 
+           OR (raw->>'bidNtceDate' = %s AND raw->>'bidNtceBgn' > %s)
+        ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC
+    """
+    # %s(파라미터 자리 표시자) : 실제 값을 쿼리에 직접 넣지 않고, 실행 시점에 안전하게 값을 바인딩하기 위해 사용
+    
+    df = pd.read_sql(sql, conn, params=[last_date, last_date, last_time])
+    # %s 3개가 각각 리스트의 값들(last_date, last_date, last_time)**로 대체
+    
+    conn.close()
+    live_data = [(l[0]) for l in df.values]
+    new_df = pd.json_normalize(live_data)
+    return new_df
+
 # 데이터 가져오기
-df_live = get_supabase_data()
+if "cached_df" not in st.session_state:
+    st.session_state["cached_df"] = load_all_data()
+
+# 마지막 날짜/시간 구하기
+if not st.session_state["cached_df"].empty:
+    last_row = st.session_state["cached_df"].iloc[0]
+    last_date = last_row["bidNtceDate"]
+    last_time = last_row["bidNtceBgn"]
+else:
+    last_date, last_time = "2000-01-01", "00:00"
+    # 기존 데이터가 하나도 없을 때(=처음 실행, DB가 비어 있음) 
+    # 쿼리에서 기준이 되는 가장 오래된 날짜/시간으로 설정해서 최초엔 전체, 그 뒤로는 변경분만 불러오기 위한 안전장치
+
+# 신규 데이터 불러오기
+new_df = load_new_data(last_date, last_time)
+if not new_df.empty:
+    st.session_state["cached_df"] = pd.concat([new_df, st.session_state["cached_df"]], ignore_index=True)
+
+# 이후 기존처럼 DataFrame 사용
+df_live = st.session_state["cached_df"]
 
 # 메인 페이지 금액 억단위
 def convert_to_won_format(amount):
@@ -134,8 +175,9 @@ if page == 'home':
         df_live.rename(columns=simple_info, inplace=True)
 
         df_live["입찰공고번호_차수"] = df_live["입찰공고번호"].astype(str) + "-" + df_live["입찰공고차수"].astype(str)
-        df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
-                                      else x["배정예산금액"], axis=1)
+        
+        df_live["금액"] = np.where(df_live["업무구분명"] == "공사", df_live["추정가격"], df_live["배정예산금액"])
+        
         # 👉 날짜 형식 변환
         df_live["입찰공고일시"] = pd.to_datetime((df_live["입찰공고일자"]+df_live["입찰공고시각"]), format="%Y-%m-%d%H:%M")
         df_live["입찰마감일시"] = pd.to_datetime((df_live["입찰마감일자"]+df_live["입찰마감시각"]), format="%Y-%m-%d%H:%M")
@@ -299,9 +341,7 @@ elif page == "detail":
         
         # --- 상단 핵심 정보 섹션 (강조) ---
         마감일시 = row.get('입찰마감일시')
-        # 마감시간 = row.get('입찰마감시각')
         마감일시_표시 = 마감일시.strftime("%Y년 %m월 %d일 %H시 %M분") if pd.notna(마감일시) else "공고서 참조"
-        # 마감시간_표시 = 마감시간.strftime("%H:%M") if pd.notna(마감시간) else "공고서 참조"
 
         # 날짜 및 시간 처리
         게시일 = row.get('입찰공고일자')
