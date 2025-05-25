@@ -100,7 +100,7 @@ else:
     last_date, last_time = "2000-01-01", "00:00"
 
 # 신규 데이터 불러오기
-new_df = load_new_data(last_date, last_time)
+new_df = load_new_data(str(last_date), str(last_time))
 if not new_df.empty:
     st.session_state["cached_df"] = pd.concat([new_df, st.session_state["cached_df"]], ignore_index=True)
 
