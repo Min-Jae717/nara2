@@ -102,7 +102,7 @@ def load_new_data(last_date, last_time) :
 # 데이터 가져오기
 if "cached_df" not in st.session_state:
     st.session_state["cached_df"] = load_all_data()
-print(st.session_state["cached_df"].columns)
+
 # 마지막 날짜/시간 구하기
 if not st.session_state["cached_df"].empty:
     last_row = st.session_state["cached_df"].iloc[0]
