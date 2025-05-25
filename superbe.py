@@ -106,8 +106,8 @@ if "cached_df" not in st.session_state:
 # 마지막 날짜/시간 구하기
 if not st.session_state["cached_df"].empty:
     last_row = st.session_state["cached_df"].iloc[0]
-    last_date = last_row["bidNtceDate"]
-    last_time = last_row["bidNtceBgn"]
+    last_date = last_row["입찰공고일자"]
+    last_time = last_row["입찰공고시각"]
 else:
     last_date, last_time = "2000-01-01", "00:00"
     # 기존 데이터가 하나도 없을 때(=처음 실행, DB가 비어 있음) 
