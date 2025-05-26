@@ -511,4 +511,6 @@ elif page == "detail":
             )
     else:
         st.error("선택된 공고 정보가 없습니다.")
-        if st.button("홈으로 돌아
+        if st.button("홈으로 돌아가기"):
+            st.session_state["page"] = "home"
+            st.rerun()
