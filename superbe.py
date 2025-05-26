@@ -155,6 +155,9 @@ tab1, = st.tabs(["📢 실시간 입찰 공고"])
 # ------------------------
 if page == 'home':    
     st_autorefresh(interval=60 * 1000, key='refresh_home_page') # 60초마다 새로고침
+    st.cache_data.clear()
+    st.session_state.pop("cached_df", None)  # 세션 내 데이터도 삭제
+
     with tab1:
         st.subheader("📢 현재 진행 중인 입찰 목록")
 
