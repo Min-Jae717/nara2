@@ -360,18 +360,30 @@ if page == 'home':
             cols[5].write(convert_to_won_format(row.get("금액")))
             
             # 게시일 표시
-            if pd.notna(row.get("입찰공고일자")) and pd.notna(row.get("입찰공고시각")):
-                게시일 = row["입찰공고일자"].strftime('%Y-%m-%d')
-                게시시각 = row["입찰공고시각"].strftime('%H:%M')
-                cols[6].markdown(f"<div style='text-align:center'>{게시일}<br>{게시시각}</div>", unsafe_allow_html=True)
+            bid_date = row.get("입찰공고일자")
+            bid_time = row.get("입찰공고시각")
+
+            if pd.notna(bid_date) and pd.notna(bid_time):
+                try:
+                    게시일 = bid_date.strftime('%Y-%m-%d')
+                    게시시각 = bid_time.strftime('%H:%M')
+                    cols[6].markdown(f"<div style='text-align:center'>{게시일}<br>{게시시각}</div>", unsafe_allow_html=True)
+                except (AttributeError, ValueError):
+                    cols[6].write("공고서 참조")
             else:
-                cols[6].write("정보없음")
+                cols[6].write("공고서 참조")
             
             # 마감일 표시
-            if pd.notna(row.get("입찰마감일자")) and pd.notna(row.get("입찰마감시각")):
-                마감일 = row["입찰마감일자"].strftime('%Y-%m-%d')
-                마감시각 = row["입찰마감시각"].strftime('%H:%M')
-                cols[7].markdown(f"<div style='text-align:center'>{마감일}<br>{마감시각}</div>", unsafe_allow_html=True)
+            close_date = row.get("입찰마감일자")
+            close_time = row.get("입찰마감시각")
+            
+            if pd.notna(close_date) and pd.notna(close_time):
+                try:
+                    마감일 = close_date.strftime('%Y-%m-%d')
+                    마감시각 = close_time.strftime('%H:%M')
+                    cols[7].markdown(f"<div style='text-align:center'>{마감일}<br>{마감시각}</div>", unsafe_allow_html=True)
+                except (AttributeError, ValueError):
+                    cols[7].write("공고서 참조")
             else:
                 cols[7].write("공고서 참조")
                 
