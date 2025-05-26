@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import psycopg2
-import numpy as np
+import pandas as pd
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
 
@@ -59,55 +59,26 @@ simple_info = {
     "dataBssDate": "데이터기준일자"
 }
 
-st.set_page_config(page_title="입찰 공고 서비스", layout="wide")
 
-# 캐싱 데이터 로드
-@st.cache_data
-def load_all_data():
-    conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
-    df = pd.read_sql("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC", conn)
-    conn.close()
-    live_data = [(l[0]) for l in df.values]
-    df_live = pd.json_normalize(live_data)
-    return df_live
+# supabase 연결
+def get_supabase_data():
+    try:
+        conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
+        cur = conn.cursor()
+        cur.execute("SELECT raw FROM bids_live ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC")
+        live_d = cur.fetchall()
+        conn.close()
 
-def load_new_data(last_date, last_time):
-    conn = psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
-    sql = """
-        SELECT raw FROM bids_live
-        WHERE (raw->>'bidNtceDate' > %s)
-           OR (raw->>'bidNtceDate' = %s AND raw->>'bidNtceBgn' > %s)
-        ORDER BY raw->>'bidNtceDate' DESC, raw->>'bidNtceBgn' DESC
-    """
-    df = pd.read_sql(sql, conn, params=[str(last_date), str(last_date), str(last_time)])
-    conn.close()
-    live_data = [(l[0]) for l in df.values]
-    new_df = pd.json_normalize(live_data)
-    return new_df
-
-# 캐시 및 컬럼명 변환
-if "cached_df" not in st.session_state:
-    st.session_state["cached_df"] = load_all_data()
-# 무조건 컬럼명 한글화(중복해도 안전)
-st.session_state["cached_df"].rename(columns=simple_info, inplace=True)
-
-# 마지막 날짜/시간 구하기
-if not st.session_state["cached_df"].empty:
-    last_row = st.session_state["cached_df"].iloc[0]
-    last_date = last_row["입찰공고일자"] if "입찰공고일자" in last_row else last_row.get("bidNtceDate")
-    last_time = last_row["입찰공고시각"] if "입찰공고시각" in last_row else last_row.get("bidNtceBgn")
-else:
-    last_date, last_time = "2000-01-01", "00:00"
-
-# 신규 데이터 불러오고 컬럼명 한글로 변환
-new_df = load_new_data(str(last_date), str(last_time))
-new_df.rename(columns=simple_info, inplace=True)
-if not new_df.empty:
-    st.session_state["cached_df"] = pd.concat([new_df, st.session_state["cached_df"]], ignore_index=True)
-    st.session_state["cached_df"].rename(columns=simple_info, inplace=True) # 병합 후에도 컬럼명 강제
-
-# 최종 데이터프레임 사용
-df_live = st.session_state["cached_df"]
+        # JSONB -> DataFrame으로 변경
+        live_data = [(l[0]) for l in live_d]
+        df_live = pd.json_normalize(live_data)
+        return df_live
+    
+    except Exception as e:
+        st.error(f"Supabase 연결 실패: {e}")
+        return pd.DataFrame(), pd.DataFrame(), None
+# 데이터 가져오기
+df_live = get_supabase_data()
 
 # 메인 페이지 금액 억단위
 def convert_to_won_format(amount):
@@ -144,6 +115,7 @@ def format_joint_contract(value):
         return f"허용 [{value.strip()}]"
     return "공고서 참조"
     
+st.set_page_config(page_title="입찰 공고 서비스", layout="wide")
 st.title("📝 실시간 입찰 공고 및 낙찰 결과")
 
 # 쿼리 파라미터로 현재 페이지 구분
@@ -155,40 +127,18 @@ tab1, = st.tabs(["📢 실시간 입찰 공고"])
 # ------------------------
 if page == 'home':    
     st_autorefresh(interval=60 * 1000, key='refresh_home_page') # 60초마다 새로고침
-    st.cache_data.clear()
-    st.session_state.pop("cached_df", None)  # 세션 내 데이터도 삭제
-
     with tab1:
         st.subheader("📢 현재 진행 중인 입찰 목록")
 
         # 2. DataFrame 컬럼명 변경
-        # df_live.rename(columns=simple_info, inplace=True)
+        df_live.rename(columns=simple_info, inplace=True)
 
         df_live["입찰공고번호_차수"] = df_live["입찰공고번호"].astype(str) + "-" + df_live["입찰공고차수"].astype(str)
         df_live["금액"] = df_live.apply(lambda x:x["추정가격"] if x["업무구분명"] == "공사" 
                                       else x["배정예산금액"], axis=1)
         # 👉 날짜 형식 변환
-        # df_live["입찰공고일시"] = pd.to_datetime((df_live["입찰공고일자"]+df_live["입찰공고시각"]), format="%Y-%m-%d%H:%M")
-        # df_live["입찰마감일시"] = pd.to_datetime((df_live["입찰마감일자"]+df_live["입찰마감시각"]), format="%Y-%m-%d%H:%M")
-        # 날짜/시각 → 문자열로 병합 전, 모두 문자열 포맷 보장
-        df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"], errors='coerce').dt.strftime("%Y-%m-%d")
-        df_live["입찰공고시각"] = pd.to_datetime(df_live["입찰공고시각"], errors='coerce').dt.strftime("%H:%M")
-        df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"], errors='coerce').dt.strftime("%Y-%m-%d")
-        df_live["입찰마감시각"] = pd.to_datetime(df_live["입찰마감시각"], errors='coerce').dt.strftime("%H:%M")
-
-        # 병합 후 변환(결측치 있는 행은 NaT)
-        df_live["입찰공고일시"] = pd.to_datetime(
-            df_live["입찰공고일자"] + df_live["입찰공고시각"],
-            format="%Y-%m-%d%H:%M",
-            errors='coerce'
-        )
-        df_live["입찰마감일시"] = pd.to_datetime(
-            df_live["입찰마감일자"] + df_live["입찰마감시각"],
-            format="%Y-%m-%d%H:%M",
-            errors='coerce'
-        )
-
-
+        df_live["입찰공고일시"] = pd.to_datetime((df_live["입찰공고일자"]+df_live["입찰공고시각"]), format="%Y-%m-%d%H:%M")
+        df_live["입찰마감일시"] = pd.to_datetime((df_live["입찰마감일자"]+df_live["입찰마감시각"]), format="%Y-%m-%d%H:%M")
 
         df_live["입찰공고일자"] = pd.to_datetime(df_live["입찰공고일자"], format="%Y-%m-%d")
         df_live["입찰마감일자"] = pd.to_datetime(df_live["입찰마감일자"], format="%Y-%m-%d")
