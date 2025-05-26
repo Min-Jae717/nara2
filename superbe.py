@@ -294,11 +294,41 @@ if page == 'home':
         if "current_page" not in st.session_state:
             st.session_state["current_page"] = 0
 
-        # total_pages = max(1, (len(filtered) + PAGE_SIZE - 1) // PAGE_SIZE)
+        total_pages = max(1, (len(filtered) + PAGE_SIZE - 1) // PAGE_SIZE)
         paginated_df = paginate_dataframe(filtered, st.session_state["current_page"], PAGE_SIZE)
         
         st.write("")
         st.write("")  
+
+        # 데이터 표시
+        st.dataframe(paginated_df)
+
+        # 페이지네이션 컨트롤 (현재 페이지 번호만 표시)
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+        
+        with col1:
+            if st.button("처음", disabled=st.session_state["current_page"] == 0):
+                st.session_state["current_page"] = 0
+                st.rerun()
+        
+        with col2:
+            if st.button("이전", disabled=st.session_state["current_page"] == 0):
+                st.session_state["current_page"] -= 1
+                st.rerun()
+        
+        with col3:
+            # 현재 페이지 번호만 표시 (총 페이지 수는 숨김)
+            st.markdown(f"<div style='text-align: center; padding: 8px; font-weight: bold;'>페이지 {st.session_state['current_page'] + 1}</div>", unsafe_allow_html=True)
+        
+        with col4:
+            if st.button("다음", disabled=st.session_state["current_page"] >= total_pages - 1):
+                st.session_state["current_page"] += 1
+                st.rerun()
+        
+        with col5:
+            if st.button("마지막", disabled=st.session_state["current_page"] >= total_pages - 1):
+                st.session_state["current_page"] = total_pages - 1
+                st.rerun()
         
         # 테이블 헤더
         header_cols = st.columns([2, 1.5, 5, 3, 1, 1.5, 2, 2, 1.5])
