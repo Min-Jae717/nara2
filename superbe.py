@@ -294,7 +294,7 @@ if page == 'home':
         if "current_page" not in st.session_state:
             st.session_state["current_page"] = 0
 
-        total_pages = max(1, (len(filtered) + PAGE_SIZE - 1) // PAGE_SIZE)
+        # total_pages = max(1, (len(filtered) + PAGE_SIZE - 1) // PAGE_SIZE)
         paginated_df = paginate_dataframe(filtered, st.session_state["current_page"], PAGE_SIZE)
         
         st.write("")
