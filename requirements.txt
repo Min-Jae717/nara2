@@ -1,7 +1,22 @@
+# collect.py require
 requests
 psycopg2-binary
 python-dotenv
 pandas
+
 # strealit require
 streamlit
 streamlit-autorefresh
+
+# text.py require
+requests
+beautifulsoup4
+pandas
+openpyxl
+python-docx
+pymupdf
+psycopg2-binary
+tqdm
+openai
+python-dotenv
+hwp5 @ git+https://github.com/mete0r/hwp5.git
