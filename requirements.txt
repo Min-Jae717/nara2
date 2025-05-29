@@ -19,4 +19,3 @@ psycopg2-binary
 tqdm
 openai
 python-dotenv
-hwp5 @ git+https://github.com/mete0r/hwp5.git
